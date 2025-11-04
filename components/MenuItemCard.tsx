@@ -22,7 +22,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, cartItems, onAddToCar
     if (hasOptions) {
       setIsModalOpen(true);
     } else {
-      // For items with no options, add directly
+      // For items with no options, add directly.
+      // This is primarily for the first add, subsequent changes use the stepper.
       const cartItemId = `${item.id}--`; // Simple ID for non-customizable items
       const existingItem = cartItems.find(ci => ci.cartItemId === cartItemId);
       if (existingItem) {
@@ -31,6 +32,13 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, cartItems, onAddToCar
         onAddToCart(item, 1, {});
       }
     }
+  };
+  
+  const handleQuantityChange = (amount: number) => {
+      if (!hasOptions) {
+          const cartItemId = `${item.id}--`;
+          onUpdateQuantity(cartItemId, totalQuantity + amount);
+      }
   };
 
   return (
@@ -50,14 +58,26 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, cartItems, onAddToCar
           <div className="flex justify-between items-center mt-4">
             <span className="text-xl font-bold text-amber-800">{item.price}฿</span>
             
-            <button
-              onClick={handleAddClick}
-              className="bg-amber-500 text-white rounded-full h-10 px-5 hover:bg-amber-600 transition-colors flex items-center justify-center font-semibold text-sm shadow-sm"
-              aria-label={`เพิ่ม ${item.name} ลงในตะกร้า`}
-            >
-              <PlusIcon className="w-5 h-5 mr-1" />
-              <span>{hasOptions ? 'เลือกตัวเลือก' : 'เพิ่ม'}</span>
-            </button>
+            {!hasOptions && totalQuantity > 0 ? (
+                <div className="flex items-center justify-center space-x-1 bg-amber-500 rounded-full text-white shadow-sm h-10 px-2">
+                    <button onClick={() => handleQuantityChange(-1)} className="p-2 rounded-full hover:bg-amber-600 transition-colors" aria-label={`ลดจำนวน ${item.name}`}>
+                        <MinusIcon className="w-5 h-5" />
+                    </button>
+                    <span className="font-bold text-base w-6 text-center select-none">{totalQuantity}</span>
+                    <button onClick={() => handleQuantityChange(1)} className="p-2 rounded-full hover:bg-amber-600 transition-colors" aria-label={`เพิ่มจำนวน ${item.name}`}>
+                        <PlusIcon className="w-5 h-5" />
+                    </button>
+                </div>
+            ) : (
+                <button
+                    onClick={handleAddClick}
+                    className="bg-amber-500 text-white rounded-full h-10 px-5 hover:bg-amber-600 transition-colors flex items-center justify-center font-semibold text-sm shadow-sm"
+                    aria-label={`เพิ่ม ${item.name} ลงในตะกร้า`}
+                >
+                    <PlusIcon className="w-5 h-5 mr-1" />
+                    <span>{hasOptions ? 'เลือกตัวเลือก' : 'เพิ่ม'}</span>
+                </button>
+            )}
           </div>
         </div>
       </div>
