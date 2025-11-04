@@ -1,0 +1,5 @@
+{
+  "name": "Modern Cafe Menu",
+  "description": "A sleek, modern web application for a cafe where customers can browse the menu, place orders, and track their order status. Designed with a clean UI/UX and prepared for future backend and LINE integration.",
+  "requestFramePermissions": []
+}
