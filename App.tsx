@@ -5,6 +5,7 @@ import MenuList from './components/MenuList';
 import CartView from './components/CartView';
 import OrderTracker from './components/OrderTracker';
 import BottomNav from './components/BottomNav';
+import PaymentModal from './components/PaymentModal';
 import { submitOrderToBackend } from './services/api';
 
 // Define a type for the options to make it cleaner
@@ -17,7 +18,11 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.MENU);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  
+  // State for payment flow
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false); // Used for the final submission loading state
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
 
   const handleAddToCart = (item: MenuItem, quantityToAdd: number, options: AddToCartOptions) => {
     const cartItemId = `${item.id}-${options.temperature || ''}-${options.sweetness || ''}`;
@@ -55,11 +60,10 @@ const App: React.FC = () => {
       );
     }
   };
-
-  const handlePlaceOrder = async () => {
+  
+  // Step 1: User clicks "Place Order" in cart, this creates a pending order and opens the payment modal.
+  const handleInitiateOrder = () => {
     if (cart.length === 0) return;
-
-    setIsPlacingOrder(true);
     
     const newOrder: Order = {
       id: `ORD-${Date.now()}`,
@@ -70,12 +74,24 @@ const App: React.FC = () => {
       userId: 'user-12345',
     };
     
+    setPendingOrder(newOrder);
+    setIsPaymentModalOpen(true);
+  };
+  
+  // Step 2: User clicks "Payment Complete" in the modal, this submits the order to the backend.
+  const handleConfirmPayment = async () => {
+    if (!pendingOrder) return;
+
+    setIsPlacingOrder(true);
+    
     try {
-      const result = await submitOrderToBackend(newOrder);
+      const result = await submitOrderToBackend(pendingOrder);
       if (result.success) {
-        setCurrentOrder(newOrder);
+        setCurrentOrder(pendingOrder);
         setCart([]);
         setCurrentView(View.TRACKER);
+        setIsPaymentModalOpen(false);
+        setPendingOrder(null);
       } else {
         alert('เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง');
       }
@@ -98,8 +114,8 @@ const App: React.FC = () => {
           <CartView 
             cartItems={cart} 
             onUpdateQuantity={handleUpdateQuantity} 
-            onPlaceOrder={handlePlaceOrder}
-            isPlacingOrder={isPlacingOrder}
+            onPlaceOrder={handleInitiateOrder}
+            isPlacingOrder={false}
           />
         );
       case View.TRACKER:
@@ -139,6 +155,16 @@ const App: React.FC = () => {
         cartItemCount={totalCartItems}
         hasActiveOrder={!!currentOrder && currentOrder.status !== OrderStatus.COMPLETED}
       />
+      
+      {pendingOrder && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => !isPlacingOrder && setIsPaymentModalOpen(false)}
+          order={pendingOrder}
+          onConfirmPayment={handleConfirmPayment}
+          isProcessing={isPlacingOrder}
+        />
+      )}
     </div>
   );
 };
